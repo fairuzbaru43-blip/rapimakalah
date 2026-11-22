@@ -54,7 +54,8 @@ Server Express melayani build produksi dan endpoint API. Atur `NODE_ENV=producti
 - Gunakan PostgreSQL online; database `localhost` di komputer tidak dapat dijangkau Vercel. URL database lokal jangan dipakai sebagai `DATABASE_URL`.
 - Tambahkan environment variables di Vercel untuk environment yang digunakan:
   - `NODE_ENV=production`
-  - `DATABASE_URL` — connection string PostgreSQL online
+  - `NEON_URL` — connection string yang dibuat integrasi Neon dengan **Custom Prefix** `NEON`. Aplikasi memprioritaskan variabel ini jika `DATABASE_URL` lama sudah ada.
+  - `DATABASE_URL` — connection string PostgreSQL online jika tidak memakai integrasi Neon.
   - `SESSION_SECRET` — nilai acak minimal 32 karakter
   - `DATABASE_SSL=true` jika diwajibkan oleh penyedia database
 - Redeploy proyek setelah menyetel variables. File `.env` lokal tidak diunggah atau digunakan Vercel.

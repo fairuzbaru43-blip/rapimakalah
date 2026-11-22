@@ -10,15 +10,16 @@ import session from 'express-session';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { Pool } from 'pg';
+import { resolveDatabaseUrl } from './configuration.js';
 import { normalizeEmail, validateDocument, validateRegistration } from './validation.js';
 
 const directory = path.dirname(fileURLToPath(import.meta.url));
 const projectDirectory = path.resolve(directory, '..');
 const port = Number(process.env.PORT || 3001);
-const databaseUrl = process.env.DATABASE_URL;
+const databaseUrl = resolveDatabaseUrl();
 const sessionSecret = process.env.SESSION_SECRET;
 
-if (!databaseUrl) throw new Error('DATABASE_URL wajib diatur di file .env.');
+if (!databaseUrl) throw new Error('NEON_URL atau DATABASE_URL wajib diatur.');
 if (!sessionSecret || sessionSecret.length < 32) {
   throw new Error('SESSION_SECRET wajib diatur di file .env dengan minimal 32 karakter.');
 }
