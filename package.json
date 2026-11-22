@@ -1,0 +1,40 @@
+{
+  "name": "rapimakalah-pro",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently --kill-others-on-fail \"npm:server:dev\" \"npm:vite\"",
+    "vite": "vite --configLoader runner",
+    "server:dev": "node --watch server/index.js",
+    "server": "node server/index.js",
+    "start": "node server/index.js",
+    "build": "vite build --configLoader runner",
+    "preview": "vite preview --configLoader runner",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "concurrently": "^10.0.7",
+    "connect-pg-simple": "^10.0.0",
+    "docx": "^9.5.1",
+    "dotenv": "^18.0.10",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.5",
+    "express-session": "^1.19.0",
+    "file-saver": "^2.0.5",
+    "helmet": "^8.3.0",
+    "jszip": "^3.10.1",
+    "lucide-react": "^0.468.0",
+    "mammoth": "^1.9.0",
+    "pg": "^8.23.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "fake-indexeddb": "^6.2.8",
+    "jsdom": "^31.0.1",
+    "vite": "^6.0.7"
+  }
+}
