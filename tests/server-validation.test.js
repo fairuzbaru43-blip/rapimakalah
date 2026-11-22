@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveDatabaseUrl } from '../server/configuration.js';
+import { resolveDatabaseUrl, shouldUseDatabaseSsl } from '../server/configuration.js';
 import { validateDocument, validateRegistration } from '../server/validation.js';
 
 test('database URL prefers Neon integration and falls back to DATABASE_URL', () => {
@@ -8,8 +8,17 @@ test('database URL prefers Neon integration and falls back to DATABASE_URL', () 
     resolveDatabaseUrl({ NEON_URL: 'postgres://neon', DATABASE_URL: 'postgres://existing' }),
     'postgres://neon'
   );
+  assert.equal(
+    resolveDatabaseUrl({ NEON_POSTGRES_URL: 'postgres://pool', NEON_DATABASE_URL: 'postgres://database' }),
+    'postgres://pool'
+  );
+  assert.equal(
+    resolveDatabaseUrl({ NEON_DATABASE_URL: 'postgres://database', DATABASE_URL: 'postgres://existing' }),
+    'postgres://database'
+  );
   assert.equal(resolveDatabaseUrl({ DATABASE_URL: 'postgres://existing' }), 'postgres://existing');
   assert.equal(resolveDatabaseUrl({}), undefined);
+  assert.equal(shouldUseDatabaseSsl({ NEON_DATABASE_URL: 'postgres://database' }), true);
 });
 
 test('registration validation normalizes email and enforces password confirmation', () => {

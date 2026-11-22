@@ -10,7 +10,7 @@ import session from 'express-session';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { Pool } from 'pg';
-import { resolveDatabaseUrl } from './configuration.js';
+import { resolveDatabaseUrl, shouldUseDatabaseSsl } from './configuration.js';
 import { normalizeEmail, validateDocument, validateRegistration } from './validation.js';
 
 const directory = path.dirname(fileURLToPath(import.meta.url));
@@ -26,7 +26,7 @@ if (!sessionSecret || sessionSecret.length < 32) {
 
 const pool = new Pool({
   connectionString: databaseUrl,
-  ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: true } : undefined
+  ssl: shouldUseDatabaseSsl() ? { rejectUnauthorized: false } : undefined
 });
 const app = express();
 const PgSessionStore = connectPgSimple(session);
