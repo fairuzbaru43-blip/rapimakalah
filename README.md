@@ -47,6 +47,18 @@ npm.cmd start
 
 Server Express melayani build produksi dan endpoint API. Atur `NODE_ENV=production`, `DATABASE_URL`, serta `SESSION_SECRET` di lingkungan deploy. Jika berada di belakang reverse proxy yang Anda kendalikan, atur `TRUST_PROXY=true`; gunakan HTTPS agar cookie sesi beratribut `Secure`.
 
+## Deploy ke Vercel
+
+- Atur **Root Directory** proyek ke folder yang berisi `package.json`.
+- Vercel menjalankan endpoint akun/dokumen melalui `api/[...path].js` sebagai Function dan menyajikan frontend dari build Vite.
+- Gunakan PostgreSQL online; database `localhost` di komputer tidak dapat dijangkau Vercel. URL database lokal jangan dipakai sebagai `DATABASE_URL`.
+- Tambahkan environment variables di Vercel untuk environment yang digunakan:
+  - `NODE_ENV=production`
+  - `DATABASE_URL` — connection string PostgreSQL online
+  - `SESSION_SECRET` — nilai acak minimal 32 karakter
+  - `DATABASE_SSL=true` jika diwajibkan oleh penyedia database
+- Redeploy proyek setelah menyetel variables. File `.env` lokal tidak diunggah atau digunakan Vercel.
+
 ## Pengujian
 
 ```powershell

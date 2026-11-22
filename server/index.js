@@ -36,7 +36,7 @@ const sessionStore = new PgSessionStore({
 });
 
 app.disable('x-powered-by');
-app.set('trust proxy', process.env.TRUST_PROXY === 'true' ? 1 : false);
+app.set('trust proxy', process.env.TRUST_PROXY === 'true' || process.env.VERCEL === '1' ? 1 : false);
 app.use(helmet({ contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false }));
 app.use(express.json({ limit: '40mb' }));
 app.use((request, response, next) => {
@@ -322,7 +322,7 @@ app.delete('/api/documents/:id', requireAuthentication, async (request, response
   }
 });
 
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV === 'production' && process.env.VERCEL !== '1') {
   app.use(express.static(path.join(projectDirectory, 'dist')));
   app.get(/.*/, (request, response, next) => {
     if (request.path.startsWith('/api/')) {
@@ -344,16 +344,21 @@ app.use((error, request, response, next) => {
 
 const schema = await readFile(path.join(directory, 'schema.sql'), 'utf8');
 await pool.query(schema);
-const server = createServer(app);
-server.listen(port, () => console.log('RapiMakalah API berjalan pada port ' + port));
+export { app };
+export default app;
 
-async function shutdown() {
-  server.close(async () => {
-    await sessionStore.close();
-    await pool.end();
-    process.exit(0);
-  });
+if (process.env.VERCEL !== '1') {
+  const server = createServer(app);
+  server.listen(port, () => console.log('RapiMakalah API berjalan pada port ' + port));
+
+  async function shutdown() {
+    server.close(async () => {
+      await sessionStore.close();
+      await pool.end();
+      process.exit(0);
+    });
+  }
+
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
 }
-
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
