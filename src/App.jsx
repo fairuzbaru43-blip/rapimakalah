@@ -3,6 +3,7 @@ import { BookOpen, FileDown, FileText, X } from 'lucide-react';
 import fileSaver from 'file-saver';
 import Sidebar from './components/Sidebar.jsx';
 import Header from './components/Header.jsx';
+import DialogModal from './components/DialogModal.jsx';
 import Workspace from './components/Workspace.jsx';
 import FormattingPanel from './components/FormattingPanel.jsx';
 import InspectionPanel, { inspectDocument } from './components/InspectionPanel.jsx';
@@ -72,16 +73,20 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState('saved');
   const [panel, setPanel] = useState('format');
+  const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
   const [mode, setMode] = useState('write');
   const [previewPage, setPreviewPage] = useState(0);
   const [dark, setDark] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [dialog, setDialog] = useState(null);
   const [applying, setApplying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [progressLabel, setProgressLabel] = useState('');
   const [inspectionRun, setInspectionRun] = useState(0);
   const uploadInput = useRef(null);
   const toastTimer = useRef(null);
+  const dialogResolver = useRef(null);
+  const dialogSequence = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -116,10 +121,41 @@ export default function App() {
     return () => { cancelled = true; };
   }, [authReady, authUser]);
 
+  useEffect(() => {
+    if (!historyDocument) return undefined;
+    function closeOnEscape(event) {
+      if (event.key === 'Escape') setHistoryDocument(null);
+    }
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [historyDocument]);
+
+  useEffect(() => {
+    if (page !== 'workspace') setMobilePanelOpen(false);
+  }, [page]);
+
   const notify = useCallback((message) => {
     setToastMessage(message);
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToastMessage(''), 2800);
+  }, []);
+
+  const requestDialog = useCallback((options) => new Promise((resolve) => {
+    if (dialogResolver.current) {
+      resolve(null);
+      return;
+    }
+    dialogResolver.current = resolve;
+    dialogSequence.current += 1;
+    setDialog({ ...options, id: dialogSequence.current });
+  }), []);
+
+  const resolveDialog = useCallback((result) => {
+    const resolve = dialogResolver.current;
+    if (!resolve) return;
+    dialogResolver.current = null;
+    setDialog(null);
+    resolve(result);
   }, []);
 
   function finishAuthentication(user) {
@@ -397,10 +433,17 @@ export default function App() {
     saveAs(blob, filename(item.title, '.txt'));
   }
 
-  function renameDocument(item = activeDoc) {
+  async function renameDocument(item = activeDoc) {
     if (!item) return;
-    const next = window.prompt('Nama dokumen', item.title || '');
-    if (!next || !next.trim()) return;
+    const next = await requestDialog({
+      type: 'form',
+      title: 'Ganti nama dokumen',
+      description: 'Gunakan nama yang mudah dikenali di arsip dokumen Anda.',
+      inputLabel: 'Nama dokumen',
+      initialValue: item.title || '',
+      confirmText: 'Simpan nama'
+    });
+    if (typeof next !== 'string' || !next.trim()) return;
     const renamed = { ...item, title: next.trim(), updatedAt: new Date().toISOString() };
     if (activeDoc && item.id === activeDoc.id) setActiveDoc(renamed);
     setDocuments((current) => current.map((entry) => entry.id === item.id ? renamed : entry));
@@ -408,7 +451,13 @@ export default function App() {
   }
 
   async function deleteDocument(item) {
-    if (!window.confirm('Hapus “' + item.title + '” dari akun Anda?')) return;
+    const confirmed = await requestDialog({
+      type: 'delete',
+      title: 'Hapus dokumen?',
+      description: '“' + item.title + '” akan dihapus dari akun Anda. Tindakan ini tidak dapat dibatalkan.',
+      confirmText: 'Hapus dokumen'
+    });
+    if (!confirmed) return;
     try {
       await removeDocument(item.id);
       setDocuments((current) => current.filter((entry) => entry.id !== item.id));
@@ -431,7 +480,13 @@ export default function App() {
   }
 
   async function clearDocuments() {
-    if (!window.confirm('Hapus semua dokumen akun? Tindakan ini tidak dapat dibatalkan.')) return;
+    const confirmed = await requestDialog({
+      type: 'delete',
+      title: 'Hapus semua dokumen?',
+      description: 'Semua dokumen dan riwayat versi di akun Anda akan dihapus. Tindakan ini tidak dapat dibatalkan.',
+      confirmText: 'Hapus semua'
+    });
+    if (!confirmed) return;
     try {
       await Promise.all(documents.map((item) => removeDocument(item.id)));
       setDocuments([]);
@@ -488,7 +543,13 @@ export default function App() {
         notify('Semua dokumen lokal sudah pernah diimpor.');
         return;
       }
-      if (!window.confirm('Impor ' + pendingDocuments.length + ' dokumen dari penyimpanan browser ke akun ini?')) return;
+      const confirmed = await requestDialog({
+        type: 'confirm',
+        title: 'Impor dokumen lokal?',
+        description: pendingDocuments.length + ' dokumen dari penyimpanan browser akan disalin ke akun ini. Dokumen lokal asli tidak dihapus.',
+        confirmText: 'Impor dokumen'
+      });
+      if (!confirmed) return;
       const imported = [];
       for (const item of pendingDocuments) {
         try {
@@ -561,7 +622,7 @@ export default function App() {
   }
 
   return (
-    <div className={'app-shell ' + (dark ? 'theme-dark' : '')}>
+    <div className={['app-shell ', (dark ? 'theme-dark' : '')].join('')}>
       <Sidebar page={page} onNavigate={setPage} onNew={startDocument} user={authUser} onLogout={logout} />
       <main className="main-area">
         <Header page={page} document={activeDoc} status={saveStatus}
@@ -569,11 +630,11 @@ export default function App() {
           onDownload={() => downloadResult()} onPdf={downloadPdf} onRename={() => renameDocument()} />
         <input ref={uploadInput} className="visually-hidden" type="file" accept=".docx,.txt,.html,.htm,text/plain,text/html,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
           onChange={(event) => { const file = event.target.files && event.target.files[0]; if (file) handleFile(file); event.target.value = ''; }} />
-        {page === 'dashboard' && <Dashboard documents={documents} onNew={startDocument} onUpload={handleFile} onOpen={openDocument} onViewAll={() => setPage('documents')} />}
+        {page === 'dashboard' && <Dashboard documents={documents} loading={loading} onNew={startDocument} onUpload={handleFile} onOpen={openDocument} onViewAll={() => setPage('documents')} />}
         {page === 'documents' && <Documents documents={documents} onOpen={openDocument} onRename={renameDocument}
           onDelete={deleteDocument} onDuplicate={duplicateDocument} onDownload={downloadResult} onHistory={showHistory} />}
         {page === 'templates' && <Templates selected={activeDoc ? activeDoc.settings.template : 'college'} onSelect={applyTemplate} />}
-        {page === 'settings' && <SettingsPage user={authUser} dark={dark} onTheme={() => setDark((value) => !value)} onClear={clearDocuments} onImportLocal={importLocalDocuments} onLogout={logout} />}
+        {page === 'settings' && <SettingsPage user={authUser} dark={dark} onTheme={() => setDark((value) => !value)} onClear={clearDocuments} onImportLocal={importLocalDocuments} onLogout={logout} onTemplates={() => setPage('templates')} />}
         {page === 'workspace' && activeDoc && <>
           <div className="document-titlebar">
             <div className="document-title-wrap"><span className="document-icon"><FileText size={18} /></span><div>
@@ -594,9 +655,12 @@ export default function App() {
                   if (node) node.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }, 80);
               }}
-              onCheck={() => setPanel('check')} previewPage={previewPage} onPreviewPage={(value) => { setPreviewPage(value); setMode('preview'); }}
+              onCheck={() => { setPanel('check'); setMobilePanelOpen(true); }} onTogglePanel={() => setMobilePanelOpen((open) => !open)}
+              previewPage={previewPage} onPreviewPage={(value) => { setPreviewPage(value); setMode('preview'); }}
               onPageCount={() => {}} issues={issues} mode={mode} onMode={setMode} />
-            <div className="right-panel-shell">
+            {mobilePanelOpen && <button className="mobile-panel-scrim" aria-label="Tutup pengaturan dokumen" onClick={() => setMobilePanelOpen(false)} />}
+            <div className={'right-panel-shell ' + (mobilePanelOpen ? 'mobile-panel-open' : '')}>
+              <div className="mobile-panel-heading"><strong>{panel === 'format' ? 'Atur dokumen' : 'Pemeriksaan'}</strong><button className="icon-button" aria-label="Tutup pengaturan" onClick={() => setMobilePanelOpen(false)}><X size={19} /></button></div>
               <div className="right-panel-tabs">
                 <button className={panel === 'format' ? 'active' : ''} onClick={() => setPanel('format')}>Formatting</button>
                 <button className={panel === 'check' ? 'active' : ''} onClick={() => setPanel('check')}>Pemeriksaan <span>{issues.length}</span></button>
@@ -605,10 +669,10 @@ export default function App() {
                 ? <FormattingPanel settings={activeDoc.settings} metadata={activeDoc.metadata}
                     onSettings={(settings) => updateActive({ settings, formattedAt: null })}
                     onMetadata={(metadata) => updateActive({ metadata, formattedAt: null })}
-                    onApply={applyFormatting} applying={applying} progress={progress} onToast={notify} />
+                    onApply={async () => { await applyFormatting(); setMobilePanelOpen(false); }} applying={applying} progress={progress} onToast={notify} />
                 : <InspectionPanel issues={issues} onRecheck={recheckDocument}
                     onFix={(issue) => {
-                      if (['numbering', 'fonts', 'font-sizes'].includes(issue.id)) setPanel('format');
+                      if (['numbering', 'fonts', 'font-sizes'].includes(issue.id)) { setPanel('format'); setMobilePanelOpen(true); }
                       else {
                         setMode('write');
                         const editor = document.querySelector('.rich-editor');
@@ -638,6 +702,7 @@ export default function App() {
             : <p>Belum ada riwayat versi yang tersimpan.</p>}
         </section>
       </div>}
+      {dialog && <DialogModal key={dialog.id} dialog={dialog} onResolve={resolveDialog} />}
       <div className={'toast-message ' + (toastMessage ? 'show' : '')} role="status">{toastMessage}</div>
     </div>
   );

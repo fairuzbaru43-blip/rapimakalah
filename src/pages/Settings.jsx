@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Database, FolderInput, LogOut, Moon, ShieldCheck, Sun, UserRound } from 'lucide-react';
+import { Database, FolderInput, LogOut, Moon, PanelsTopLeft, ShieldCheck, Sun, UserRound } from 'lucide-react';
 import { apiRequest } from '../services/api.js';
 
-export default function Settings({ user, dark, onTheme, onClear, onImportLocal, onLogout }) {
+export default function Settings({ user, dark, onTheme, onClear, onImportLocal, onLogout, onTemplates }) {
   const [passwords, setPasswords] = useState({ currentPassword: '', newPassword: '', passwordConfirmation: '' });
   const [passwordMessage, setPasswordMessage] = useState('');
   const [passwordError, setPasswordError] = useState('');
@@ -33,6 +33,7 @@ export default function Settings({ user, dark, onTheme, onClear, onImportLocal, 
       <div className="settings-page-grid">
         <section className="settings-card"><div className="settings-card-icon"><Sun size={18} /></div><div className="settings-card-title"><h2>Tampilan</h2><p>Pilih tema yang nyaman untuk Anda.</p></div><button className="button button-secondary" onClick={onTheme}>{dark ? <Sun size={16} /> : <Moon size={16} />}{dark ? 'Tema terang' : 'Tema gelap'}</button></section>
         <section className="settings-card"><div className="settings-card-icon"><UserRound size={18} /></div><div className="settings-card-title"><h2>Profil akun</h2><p>{user?.name}<br />{user?.email}</p></div><button className="button button-secondary" onClick={onLogout}><LogOut size={15} /> Keluar</button></section>
+        <section className="settings-card mobile-template-link"><div className="settings-card-icon"><PanelsTopLeft size={18} /></div><div className="settings-card-title"><h2>Template dokumen</h2><p>Pilih pedoman format untuk naskah berikutnya.</p></div><button className="button button-secondary" onClick={onTemplates}>Lihat template</button></section>
         <section className="settings-card"><div className="settings-card-icon green"><ShieldCheck size={18} /></div><div className="settings-card-title"><h2>Privasi dokumen</h2><p>Dokumen disimpan di server dan dibatasi berdasarkan akun yang masuk.</p></div><span className="local-badge">Terlindungi</span></section>
         <section className="settings-password-card">
           <div className="settings-card-title"><h2>Ubah password</h2><p>Password baru harus memiliki minimal 10 karakter.</p></div>

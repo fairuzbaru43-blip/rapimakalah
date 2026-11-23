@@ -1,14 +1,15 @@
 import { useState } from 'react';
-import { Eye, PenLine, SearchCheck } from 'lucide-react';
+import { Eye, ListTree, PenLine, SearchCheck, SlidersHorizontal } from 'lucide-react';
 import PageNavigation from './PageNavigation.jsx';
 import DocumentEditor from './DocumentEditor.jsx';
 import DocumentPreview from './DocumentPreview.jsx';
 
 export default function Workspace({
   document, settings, sourceHtml, onSourceChange, onImage, analysis, onSection,
-  onCheck, previewPage, onPreviewPage, onPageCount, issues, mode, onMode
+  onCheck, previewPage, onPreviewPage, onPageCount, issues, mode, onMode, onTogglePanel
 }) {
   const [leftTab, setLeftTab] = useState('pages');
+  const [outlineOpen, setOutlineOpen] = useState(false);
   const [checkOpen, setCheckOpen] = useState(false);
   const blocks = analysis.blocks;
   return (
@@ -16,8 +17,12 @@ export default function Workspace({
       <PageNavigation activeTab={leftTab} onTab={(tab) => {
         setLeftTab(tab);
         if (tab === 'rules') setCheckOpen(true);
-      }} blocks={blocks} settings={settings} pages={analysis.pageCount} page={previewPage} onPage={onPreviewPage} onSection={onSection} />
+      }} mobileOpen={outlineOpen} blocks={blocks} settings={settings} pages={analysis.pageCount} page={previewPage} onPage={onPreviewPage} onSection={onSection} />
       <section className="center-pane">
+        <div className="mobile-workspace-actions">
+          <button aria-expanded={outlineOpen} onClick={() => setOutlineOpen((open) => !open)}><ListTree size={17} />{outlineOpen ? 'Sembunyikan struktur' : 'Struktur & halaman'}</button>
+          <button onClick={onTogglePanel}><SlidersHorizontal size={17} />Atur dokumen</button>
+        </div>
         <div className="center-tabs">
           <div className="mode-tabs">
             <button className={mode === 'write' ? 'active' : ''} onClick={() => onMode('write')}><PenLine size={15} />Tulis naskah</button>

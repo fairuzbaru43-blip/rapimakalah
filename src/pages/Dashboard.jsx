@@ -10,7 +10,7 @@ function relativeDate(value) {
   return new Date(value).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
 }
 
-export default function Dashboard({ documents, onNew, onUpload, onOpen, onViewAll }) {
+export default function Dashboard({ documents, loading = false, onNew, onUpload, onOpen, onViewAll }) {
   const completed = documents.filter((item) => item.formattedAt).length;
   const pending = documents.length - completed;
   const recent = documents.slice(0, 5);
@@ -24,15 +24,19 @@ export default function Dashboard({ documents, onNew, onUpload, onOpen, onViewAl
         </div>
         <div className="welcome-art" aria-hidden="true"><div className="art-glow" /><div className="art-sheet"><span /><span /><span /><span /><span /><i>DOCX</i></div><div className="art-check">✓</div></div>
       </section>
-      <section className="stats-grid">
+      <section className="stats-grid" aria-label="Statistik dokumen">
+        {loading && [0, 1, 2].map((item) => <article className="stat-card skeleton-card" key={item} aria-hidden="true"><span className="skeleton skeleton-icon" /><span className="skeleton-copy"><i className="skeleton skeleton-number" /><i className="skeleton skeleton-label" /></span></article>)}
+        {!loading && <>
         <article className="stat-card"><span className="stat-icon blue"><Files size={18} /></span><div><strong>{documents.length}</strong><small>Total dokumen</small></div><span className="stat-side">Di akun Anda</span></article>
         <article className="stat-card"><span className="stat-icon amber"><Clock3 size={18} /></span><div><strong>{pending}</strong><small>Belum diformat</small></div><span className="stat-side">Siap diproses</span></article>
         <article className="stat-card"><span className="stat-icon green"><FileCheck2 size={18} /></span><div><strong>{completed}</strong><small>Sudah diformat</small></div><span className="stat-side">Bisa diunduh</span></article>
+        </>}
       </section>
       <section className="dashboard-columns">
         <div className="recent-card">
           <div className="section-title-row"><div><h2>Dokumen terbaru</h2><p>Lanjutkan pekerjaan terakhir Anda.</p></div><button className="text-button" onClick={onViewAll}>Lihat semua <ArrowRight size={15} /></button></div>
-          {recent.length === 0 ? <div className="empty-documents"><div className="empty-illustration"><Files size={25} /></div><strong>Belum ada dokumen</strong><p>Buat makalah baru atau unggah naskah dari perangkat Anda.</p><div className="empty-actions"><button className="button button-primary" onClick={onNew}><FilePlus2 size={16} /> Buat baru</button><DocumentUpload onFile={onUpload} compact /></div></div>
+          {loading ? <div className="dashboard-skeleton-list" aria-label="Memuat dokumen">{[0, 1, 2].map((item) => <div className="skeleton-row" key={item}><i className="skeleton skeleton-icon" /><span><i className="skeleton skeleton-label" /><i className="skeleton skeleton-meta" /></span></div>)}</div>
+            : recent.length === 0 ? <div className="empty-documents"><div className="empty-illustration"><Files size={25} /></div><strong>Belum ada dokumen</strong><p>Buat makalah baru atau unggah naskah dari perangkat Anda.</p><div className="empty-actions"><button className="button button-primary" onClick={onNew}><FilePlus2 size={16} /> Buat baru</button><DocumentUpload onFile={onUpload} compact /></div></div>
             : <div className="recent-list">{recent.map((item) => <button className="recent-row" key={item.id} onClick={() => onOpen(item)}>
               <span className="file-badge"><Files size={17} /></span><span className="recent-name"><strong>{item.title || 'Dokumen tanpa judul'}</strong><small>{item.formattedAt ? 'Sudah diformat' : 'Belum diformat'} · {relativeDate(item.updatedAt)}</small></span><ArrowRight size={16} />
             </button>)}</div>}

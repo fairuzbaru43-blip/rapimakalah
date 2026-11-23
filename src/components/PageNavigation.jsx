@@ -6,7 +6,7 @@ const tabs = [
   { id: 'rules', label: 'Aturan', Icon: ShieldCheck }
 ];
 
-export default function PageNavigation({ activeTab, onTab, blocks, settings, pages, page, onPage, onSection }) {
+export default function PageNavigation({ activeTab, onTab, blocks, settings, pages, page, onPage, onSection, mobileOpen = false }) {
   const headings = blocks.filter((block) => block.type === 'heading1' || block.type === 'heading2');
   const rules = [
     { label: 'Margin halaman', ok: Boolean(settings.rules.margins) },
@@ -16,7 +16,7 @@ export default function PageNavigation({ activeTab, onTab, blocks, settings, pag
     { label: 'Daftar pustaka terdeteksi', ok: blocks.some((block) => /DAFTAR PUSTAKA/i.test(block.text || '')) }
   ];
   return (
-    <aside className="navigation-pane">
+    <aside className={'navigation-pane ' + (mobileOpen ? 'mobile-outline-open' : '')}>
       <div className="navigation-tabs">
         {tabs.map(({ id, label, Icon }) => <button key={id} className={activeTab === id ? 'active' : ''} onClick={() => onTab(id)}><Icon size={14} />{label}</button>)}
       </div>

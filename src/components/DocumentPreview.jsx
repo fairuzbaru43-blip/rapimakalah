@@ -50,7 +50,10 @@ function PreviewBlock({ block, settings }) {
 }
 
 export default function DocumentPreview({ blocks, settings, title, currentPage, onPageChange, onPageCount }) {
-  const [zoom, setZoom] = useState(77);
+  const [zoom, setZoom] = useState(() => typeof window !== 'undefined' &&
+    (typeof window.matchMedia === 'function' ? window.matchMedia('(max-width: 720px)').matches : window.innerWidth <= 720)
+    ? Math.max(45, Math.min(77, Math.floor((window.innerWidth - 20) / 794 * 100)))
+    : 77);
   const pageRefs = useRef([]);
   const pages = useMemo(() => {
     const count = estimatePageCount(blocks, settings);
